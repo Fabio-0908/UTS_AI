@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VibeVoyage AI</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0f1117;color:#e8e9ed;min-height:100vh;display:flex;flex-direction:column}
+.header{background:linear-gradient(135deg,#1a1d2e 0%,#0f1117 100%);border-bottom:1px solid #2a2d3e;padding:16px 24px;display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header-title{font-size:18px;font-weight:700;color:#fff}.header-sub{font-size:12px;color:#7c8194;margin-top:2px}
+.badge{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:3px 10px;font-size:11px;margin-left:auto}
+.chat-area{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 200px)}
+.msg{display:flex;gap:10px;max-width:100%}
+.msg.user{flex-direction:row-reverse}
+.avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px}
+.avatar.ai{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+.avatar.user{background:linear-gradient(135deg,#059669,#10b981);color:#fff}
+.bubble{padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.6;max-width:78%}
+.bubble.ai{background:#1e2030;border:1px solid #2a2d3e;border-top-left-radius:4px;color:#d1d5db}
+.bubble.user{background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;border-top-right-radius:4px}
+.bubble.loading{color:#7c8194;font-style:italic}
+.result-card{background:#1a1d2e;border:1px solid #2a2d3e;border-radius:12px;padding:14px;margin:8px 0}
+.result-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.result-name{font-weight:600;color:#e2e8f0;font-size:14px}
+.result-city{font-size:11px;color:#818cf8;background:rgba(99,102,241,.1);padding:2px 8px;border-radius:10px}
+.result-cat{font-size:11px;color:#10b981;background:rgba(16,185,129,.1);padding:2px 8px;border-radius:10px;margin-top:4px;display:inline-block}
+.result-desc{font-size:12px;color:#9ca3af;margin:6px 0;line-height:1.5}
+.result-meta{display:flex;gap:12px;font-size:12px;color:#7c8194}
+.result-price{color:#f59e0b}.result-rating{color:#fbbf24}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:#818cf8;border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;transition:all .2s}
+.chip:hover{background:rgba(99,102,241,.25);color:#c4b5fd}
+.input-area{padding:16px 24px;background:#0f1117;border-top:1px solid #1e2030}
+.input-wrap{display:flex;gap:10px;align-items:flex-end;background:#1a1d2e;border:1px solid #2a2d3e;border-radius:16px;padding:10px 14px}
+.input-wrap:focus-within{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.15)}
+textarea{flex:1;background:none;border:none;outline:none;resize:none;color:#e8e9ed;font-size:14px;font-family:inherit;line-height:1.5;max-height:120px;min-height:24px}
+textarea::placeholder{color:#4b5563}
+.send-btn{background:linear-gradient(135deg,#6366f1,#7c3aed);border:none;border-radius:10px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .2s}
+.send-btn:hover{opacity:.9}.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.send-btn svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.filters{display:flex;gap:8px;padding:8px 24px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #1a1d2e}
+.filter-btn{background:#1a1d2e;border:1px solid #2a2d3e;color:#9ca3af;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .2s}
+.filter-btn:hover,.filter-btn.active{background:rgba(99,102,241,.15);border-color:#6366f1;color:#818cf8}
+.evidence{font-size:11px;color:#4b5563;margin-top:6px;border-top:1px solid #2a2d3e;padding-top:6px}
+.evidence span{color:#6366f1}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">🧳</div>
+  <div><div class="header-title">VibeVoyage AI</div><div class="header-sub">Asisten Perencana Perjalanan Berbasis Kepribadian</div></div>
+  <div class="badge">RAG System • 437 Destinasi + 21 Kuliner</div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" onclick="setCity('')">Semua Kota</button>
+  <button class="filter-btn" onclick="setCity('Jakarta')">Jakarta</button>
+  <button class="filter-btn" onclick="setCity('Yogyakarta')">Yogyakarta</button>
+  <button class="filter-btn" onclick="setCity('Bandung')">Bandung</button>
+  <button class="filter-btn" onclick="setCity('Semarang')">Semarang</button>
+  <button class="filter-btn" onclick="setCity('Surabaya')">Surabaya</button>
+</div>
+
+<div class="chat-area" id="chat">
+  <div class="msg">
+    <div class="avatar ai">🤖</div>
+    <div class="bubble ai">
+      Halo! Saya <strong>VibeVoyage AI</strong> — asisten perjalanan cerdas untuk <em>solo travelers</em> dan backpacker dengan budget terbatas. Saya punya akses ke <strong>437 destinasi wisata</strong> di 5 kota besar Indonesia dan <strong>21 restoran</strong> pilihan.<br><br>
+      Coba tanya saya:<br>
+      <div class="chips" style="margin-top:8px">
+        <span class="chip" onclick="quickAsk(this)">Wisata murah di Bandung</span>
+        <span class="chip" onclick="quickAsk(this)">Pantai tersembunyi Yogyakarta</span>
+        <span class="chip" onclick="quickAsk(this)">Tempat makan murah Jakarta</span>
+        <span class="chip" onclick="quickAsk(this)">Candi bersejarah Yogyakarta</span>
+        <span class="chip" onclick="quickAsk(this)">Wisata alam gratis Bandung</span>
+        <span class="chip" onclick="quickAsk(this)">Museum terbaik Semarang</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-wrap">
+    <textarea id="userInput" rows="1" placeholder="Tanya tentang wisata, kuliner, budget, kategori..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+const DB_TOURISM=[{Place_Id:1,Place_Name:"Monumen Nasional",Description:"Monumen Nasional atau yang populer disingkat dengan Monas adalah monumen peringatan setinggi 132 meter yang didirikan untuk mengenang perlawanan rakyat Indonesia.",Category:"Budaya",City:"Jakarta",Price:20000,Rating:4.6,Lat:-6.1753924,Long:106.8271528},{Place_Id:2,Place_Name:"Kota Tua",Description:"Kota tua di Jakarta berpusat di Alun-Alun Fatahillah. Museum Sejarah Jakarta ada di sini.",Category:"Budaya",City:"Jakarta",Price:0,Rating:4.6},{Place_Id:3,Place_Name:"Dunia Fantasi",Description:"Dufan adalah tempat hiburan di kawasan Taman Impian Jaya Ancol, Jakarta Utara.",Category:"Taman Hiburan",City:"Jakarta",Price:270000,Rating:4.6},{Place_Id:7,Place_Name:"Kebun Binatang Ragunan",Description:"Kebun Binatang seluas 140 hektare di Jakarta Selatan.",Category:"Cagar Alam",City:"Jakarta",Price:4000,Rating:4.5},{Place_Id:10,Place_Name:"Pulau Tidung",Description:"Pulau Tidung adalah salah satu kelurahan di Kepulauan Seribu.",Category:"Bahari",City:"Jakarta",Price:150000,Rating:4.5},{Place_Id:15,Place_Name:"Pasar Seni",Description:"Pusat kerajinan dan kesenian untuk seniman berbakat.",Category:"Pusat Perbelanjaan",City:"Jakarta",Price:0,Rating:4.4},{Place_Id:17,Place_Name:"Museum Fatahillah",Description:"Museum Sejarah Jakarta di Jalan Taman Fatahillah.",Category:"Budaya",City:"Jakarta",Price:5000,Rating:4.4},{Place_Id:18,Place_Name:"Museum Bank Indonesia",Description:"Museum bersejarah di Jakarta Barat.",Category:"Budaya",City:"Jakarta",Price:2000,Rating:4.7},{Place_Id:22,Place_Name:"Masjid Istiqlal",Description:"Masjid nasional negara Republik Indonesia, terbesar di Asia Tenggara.",Category:"Tempat Ibadah",City:"Jakarta",Price:0,Rating:4.7},{Place_Id:35,Place_Name:"Grand Indonesia Mall",Description:"Mal mewah di pusat Jakarta dibuka tahun 2007.",Category:"Pusat Perbelanjaan",City:"Jakarta",Price:0,Rating:4.7},{Place_Id:56,Place_Name:"Pantai Ancol",Description:"Wisata pantai dalam kota Jakarta dengan area Lagoon dan Festival.",Category:"Bahari",City:"Jakarta",Price:25000,Rating:4.4},{Place_Id:85,Place_Name:"Taman Pintar Yogyakarta",Description:"Wahana wisata edukasi di pusat Kota Yogyakarta.",Category:"Taman Hiburan",City:"Yogyakarta",Price:6000,Rating:4.5},{Place_Id:86,Place_Name:"Keraton Yogyakarta",Description:"Istana resmi Kesultanan Ngayogyakarta Hadiningrat.",Category:"Budaya",City:"Yogyakarta",Price:15000,Rating:4.6},{Place_Id:90,Place_Name:"Kampung Wisata Taman Sari",Description:"Situs bekas taman istana Keraton Ngayogyakarta.",Category:"Taman Hiburan",City:"Yogyakarta",Price:5000,Rating:4.6},{Place_Id:92,Place_Name:"Nol Kilometer Jl.Malioboro",Description:"Persimpangan bersejarah di tengah kota Yogyakarta.",Category:"Taman Hiburan",City:"Yogyakarta",Price:0,Rating:4.7},{Place_Id:106,Place_Name:"Kawasan Malioboro",Description:"Jalan ikonik Yogyakarta dari Tugu hingga perempatan Kantor Pos.",Category:"Taman Hiburan",City:"Yogyakarta",Price:0,Rating:4.8},{Place_Id:109,Place_Name:"Hutan Pinus Pengger",Description:"Objek wisata andalan Bantul. Wisata alam di antara hutan pinus.",Category:"Taman Hiburan",City:"Yogyakarta",Price:3000,Rating:4.5},{Place_Id:121,Place_Name:"Candi Prambanan",Description:"Kompleks candi Hindu terbesar di Indonesia, dibangun abad ke-9.",Category:"Budaya",City:"Yogyakarta",Price:50000,Rating:4.7},{Place_Id:126,Place_Name:"Pantai Goa Cemara",Description:"Pantai di Bantul dengan pohon cemara yang rimbun.",Category:"Bahari",City:"Yogyakarta",Price:4000,Rating:4.3},{Place_Id:139,Place_Name:"Puncak Gunung Api Purba - Nglanggeran",Description:"Gunung api purba terbentuk 0.6-70 juta tahun lalu.",Category:"Cagar Alam",City:"Yogyakarta",Price:10000,Rating:4.7},{Place_Id:150,Place_Name:"Wisata Kraton Jogja",Description:"Komplek kerajaan di tengah kota Yogyakarta.",Category:"Budaya",City:"Yogyakarta",Price:7000,Rating:4.7},{Place_Id:158,Place_Name:"Pantai Pok Tunggal",Description:"Hidden paradise di Desa Tepus, Gunung Kidul.",Category:"Bahari",City:"Yogyakarta",Price:10000,Rating:4.5},{Place_Id:170,Place_Name:"Candi Borobudur",Description:"Candi Buddha terbesar di dunia, di Magelang Jawa Tengah.",Category:"Budaya",City:"Yogyakarta",Price:50000,Rating:4.7},{Place_Id:177,Place_Name:"Pantai Parangtritis",Description:"Pantai legendaris di Bantul dengan pasir hitam.",Category:"Bahari",City:"Yogyakarta",Price:10000,Rating:4.5},{Place_Id:207,Place_Name:"Heha Sky View",Description:"Tempat wisata hits di Yogyakarta dengan foto estetik.",Category:"Taman Hiburan",City:"Yogyakarta",Price:15000,Rating:4.4},{Place_Id:211,Place_Name:"GunungTangkuban perahu",Description:"Gunung di Jawa Barat, 20 km dari Bandung.",Category:"Cagar Alam",City:"Bandung",Price:30000,Rating:4.5},{Place_Id:212,Place_Name:"Jalan Braga",Description:"Jalan utama bersejarah di kota Bandung.",Category:"Budaya",City:"Bandung",Price:0,Rating:4.7},{Place_Id:213,Place_Name:"Gedung Sate",Description:"Ikon Bandung dengan ornamen tusuk sate pada menara.",Category:"Budaya",City:"Bandung",Price:5000,Rating:4.6},{Place_Id:214,Place_Name:"Trans Studio Bandung",Description:"Kawasan wisata terpadu seluas 4.2 hektare.",Category:"Taman Hiburan",City:"Bandung",Price:280000,Rating:4.5},{Place_Id:215,Place_Name:"Taman Hutan Raya Ir. H. Djuanda",Description:"Kawasan konservasi di Bandung dengan hutan pinus.",Category:"Cagar Alam",City:"Bandung",Price:15000,Rating:4.5},{Place_Id:217,Place_Name:"Kebun Binatang Bandung",Description:"Kebun binatang di sebelah kampus ITB Bandung.",Category:"Cagar Alam",City:"Bandung",Price:20000,Rating:4.0},{Place_Id:218,Place_Name:"Kawah Putih",Description:"Kawah vulkanik di kaki Gunung Patuha, Ciwidey.",Category:"Cagar Alam",City:"Bandung",Price:81000,Rating:4.5},{Place_Id:219,Place_Name:"Tebing Karaton",Description:"Tebing di kawasan Taman Hutan Raya Djuanda.",Category:"Cagar Alam",City:"Bandung",Price:15000,Rating:4.5},{Place_Id:220,Place_Name:"Dusun Bambu",Description:"Taman rekreasi ecotourism konsep 'Private Sanctuary'.",Category:"Taman Hiburan",City:"Bandung",Price:25000,Rating:4.5},{Place_Id:221,Place_Name:"Museum Geologi Bandung",Description:"Museum didirikan 1929, renovasi dengan bantuan JICA.",Category:"Budaya",City:"Bandung",Price:2000,Rating:4.6},{Place_Id:222,Place_Name:"Museum Konferensi Asia Afrika",Description:"Museum di Jalan Asia Afrika, memorabilia KAA 1955.",Category:"Budaya",City:"Bandung",Price:0,Rating:4.6},{Place_Id:225,Place_Name:"Orchid Forest Cikole",Description:"Taman anggrek terluas di Indonesia di kawasan hutan lindung.",Category:"Taman Hiburan",City:"Bandung",Price:50000,Rating:4.6},{Place_Id:232,Place_Name:"Bukit Moko",Description:"Bukit dengan pemandangan Bandung dari ketinggian.",Category:"Cagar Alam",City:"Bandung",Price:25000,Rating:4.5},{Place_Id:242,Place_Name:"Curug Dago",Description:"Air terjun di ketinggian 800 meter di atas permukaan laut.",Category:"Cagar Alam",City:"Bandung",Price:12000,Rating:4.0},{Place_Id:248,Place_Name:"NuArt Sculpture Park",Description:"Gallery seni milik seniman Nyoman Nuarta di Bandung.",Category:"Taman Hiburan",City:"Bandung",Price:50000,Rating:4.7},{Place_Id:262,Place_Name:"Wot Batu",Description:"Konfigurasi energi dari perjalanan spiritualitas Sunaryo.",Category:"Cagar Alam",City:"Bandung",Price:50000,Rating:4.7},{Place_Id:278,Place_Name:"Masjid Daarut Tauhiid Bandung",Description:"Masjid seribu tangan di Gegerkalong Girang.",Category:"Tempat Ibadah",City:"Bandung",Price:0,Rating:4.9},{Place_Id:289,Place_Name:"Curug Aseupan",Description:"Air terjun bintang utama di kawasan Curug Tilu Leuwi Opat.",Category:"Cagar Alam",City:"Bandung",Price:10000,Rating:4.7},{Place_Id:309,Place_Name:"Observatorium Bosscha",Description:"Peneropongan bintang tertua di Indonesia.",Category:"Cagar Alam",City:"Bandung",Price:25000,Rating:4.5},{Place_Id:317,Place_Name:"Curug Cimahi",Description:"Air terjun setinggi 87 meter di Kabupaten Bandung Barat.",Category:"Cagar Alam",City:"Bandung",Price:15000,Rating:4.6},{Place_Id:318,Place_Name:"Situ Patenggang",Description:"Danau di Ciwidey, di ketinggian 1600 meter.",Category:"Cagar Alam",City:"Bandung",Price:20000,Rating:4.5},{Place_Id:325,Place_Name:"Saung Angklung Mang Udjo",Description:"Pertunjukan, pusat kerajinan, dan workshop instrumen bambu.",Category:"Budaya",City:"Bandung",Price:75000,Rating:4.7},{Place_Id:335,Place_Name:"Candi Gedong Songo",Description:"Kompleks candi Hindu di Ungaran, Semarang.",Category:"Budaya",City:"Semarang",Price:10000,Rating:4.5},{Place_Id:337,Place_Name:"Kampung Pelangi",Description:"Kampung dengan rumah-rumah berwarna-warni di Semarang.",Category:"Taman Hiburan",City:"Semarang",Price:3000,Rating:4.3},{Place_Id:338,Place_Name:"Lawang Sewu",Description:"Landmark Semarang, bekas kantor pusat Perusahaan Kereta Api Belanda.",Category:"Budaya",City:"Semarang",Price:10000,Rating:4.6},{Place_Id:339,Place_Name:"Sam Poo Kong Temple",Description:"Kuil Tionghoa tertua di Semarang.",Category:"Budaya",City:"Semarang",Price:35000,Rating:4.5},{Place_Id:345,Place_Name:"Kampoeng Djadhoel Semarang",Description:"Kampung Batik Semarang bernuansa tempo dulu.",Category:"Budaya",City:"Semarang",Price:10000,Rating:4.7},{Place_Id:355,Place_Name:"Umbul Sidomukti",Description:"Wisata alam pegunungan di Desa Sidomukti.",Category:"Cagar Alam",City:"Semarang",Price:75000,Rating:4.6},{Place_Id:362,Place_Name:"Danau Rawa Pening",Description:"Danau alam di Ambarawa dengan pemandangan indah.",Category:"Cagar Alam",City:"Semarang",Price:15000,Rating:4.4},{Place_Id:373,Place_Name:"Museum Kereta Ambarawa",Description:"Museum kereta api bersejarah di Ambarawa.",Category:"Budaya",City:"Semarang",Price:10000,Rating:4.5},{Place_Id:375,Place_Name:"Kota Lama Semarang",Description:"Kawasan bersejarah pusat perdagangan abad 19-20.",Category:"Budaya",City:"Semarang",Price:0,Rating:4.7},{Place_Id:386,Place_Name:"Air Terjun Semirang",Description:"Air terjun eksotis di lereng Gunung Ungaran.",Category:"Cagar Alam",City:"Semarang",Price:9000,Rating:4.4},{Place_Id:392,Place_Name:"Ekowisata Mangrove Wonorejo",Description:"Wisata rekreasi dan edukasi hutan mangrove di Surabaya.",Category:"Cagar Alam",City:"Surabaya",Price:0,Rating:4.3},{Place_Id:395,Place_Name:"Taman Prestasi",Description:"Taman favorit keluarga di Surabaya.",Category:"Taman Hiburan",City:"Surabaya",Price:0,Rating:4.6},{Place_Id:396,Place_Name:"Monumen Kapal Selam",Description:"Museum kapal selam di Surabaya.",Category:"Budaya",City:"Surabaya",Price:15000,Rating:4.4},{Place_Id:404,Place_Name:"Kenjeran Park",Description:"Tempat wisata kekinian di Surabaya.",Category:"Taman Hiburan",City:"Surabaya",Price:35000,Rating:4.2},{Place_Id:408,Place_Name:"Kebun Binatang Surabaya",Description:"Salah satu kebun binatang terpopuler di Indonesia.",Category:"Cagar Alam",City:"Surabaya",Price:15000,Rating:4.3},{Place_Id:411,Place_Name:"Masjid Muhammad Cheng Hoo",Description:"Masjid bernuansa Muslim Tionghoa di Surabaya.",Category:"Tempat Ibadah",City:"Surabaya",Price:0,Rating:4.7},{Place_Id:415,Place_Name:"Museum De Javasche Bank",Description:"Museum bank bersejarah di Surabaya.",Category:"Budaya",City:"Surabaya",Price:5000,Rating:4.6},{Place_Id:418,Place_Name:"Museum Sepuluh Nopember Kota Surabaya",Description:"Museum sejarah perjuangan kemerdekaan.",Category:"Budaya",City:"Surabaya",Price:5000,Rating:4.7},{Place_Id:419,Place_Name:"Monumen Tugu Pahlawan",Description:"Simbol utama kota Surabaya.",Category:"Budaya",City:"Surabaya",Price:0,Rating:4.7},{Place_Id:424,Place_Name:"Pantai Ria Kenjeran",Description:"Destinasi wisata pantai andalan Surabaya.",Category:"Bahari",City:"Surabaya",Price:15000,Rating:4.2},{Place_Id:429,Place_Name:"House of Sampoerna",Description:"Museum tembakau dan markas besar Sampoerna.",Category:"Budaya",City:"Surabaya",Price:0,Rating:4.6},{Place_Id:434,Place_Name:"Taman Bungkul",Description:"Taman wisata kota di pusat Surabaya.",Category:"Taman Hiburan",City:"Surabaya",Price:0,Rating:4.6},{Place_Id:436,Place_Name:"Taman Flora Bratang Surabaya",Description:"Taman kota fasilitas publik dari Pemkot Surabaya.",Category:"Taman Hiburan",City:"Surabaya",Price:0,Rating:4.6}];
+
+const DB_CULINARY=[{name:"Noah's Barn Coffeenery",city:"Bandung",cuisines:"Cafe, Coffee and Tea, Western",cost:150000,priceRange:3,rating:4.2},{name:"Momo Milk",city:"Bogor",cuisines:"Cafe, Desserts, Beverages",cost:70000,priceRange:2,rating:3.7},{name:"Lemongrass",city:"Bogor",cuisines:"Peranakan, Indonesian",cost:250000,priceRange:3,rating:4.0},{name:"Talaga Sampireun",city:"Jakarta",cuisines:"Sunda, Indonesian",cost:200000,priceRange:3,rating:4.9},{name:"Toodz House",city:"Jakarta",cuisines:"Cafe, Italian, Western, Indonesian",cost:165000,priceRange:3,rating:4.6},{name:"OJJU",city:"Jakarta",cuisines:"Korean",cost:200000,priceRange:3,rating:3.9},{name:"Union Deli",city:"Jakarta",cuisines:"Desserts, Bakery, Western",cost:200000,priceRange:3,rating:4.6},{name:"Skye",city:"Jakarta",cuisines:"Italian, Continental",cost:800000,priceRange:3,rating:4.1},{name:"Satoo - Hotel Shangri-La",city:"Jakarta",cuisines:"Asian, Indonesian, Western",cost:800000,priceRange:3,rating:4.6},{name:"MONKS",city:"Jakarta",cuisines:"Western, Asian, Cafe",cost:250000,priceRange:3,rating:4.2},{name:"Zenbu",city:"Jakarta",cuisines:"Japanese, Sushi, Ramen",cost:200000,priceRange:3,rating:4.4},{name:"Sushi Masa",city:"Jakarta",cuisines:"Sushi, Japanese",cost:500000,priceRange:3,rating:4.9},{name:"Lucky Cat Coffee",city:"Jakarta",cuisines:"Cafe, Western",cost:300000,priceRange:3,rating:4.3},{name:"Flip Burger",city:"Jakarta",cuisines:"Burger",cost:120000,priceRange:3,rating:4.4},{name:"Fish Streat",city:"Jakarta",cuisines:"Seafood, Western",cost:100000,priceRange:3,rating:4.0},{name:"Avec Moi Restaurant",city:"Jakarta",cuisines:"French, Western",cost:350000,priceRange:3,rating:4.3},{name:"Onokabe",city:"Tangerang",cuisines:"Indonesian",cost:300000,priceRange:3,rating:3.7}];
+
+let selectedCity="";
+function setCity(c){selectedCity=c;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.filter-btn').forEach(b=>{if(b.textContent.trim()===(c||'Semua Kota'))b.classList.add('active')});}
+
+function fmt(n){if(!n||n===0)return'Gratis';return'Rp '+n.toLocaleString('id-ID');}
+
+function searchTourism(q,city,maxPrice){
+  q=q.toLowerCase();
+  let results=DB_TOURISM;
+  if(city)results=results.filter(r=>r.City.toLowerCase()===city.toLowerCase());
+  if(maxPrice>0)results=results.filter(r=>r.Price<=maxPrice);
+  const keywords=q.split(/\s+/).filter(w=>w.length>2&&!['yang','dan','di','ke','dengan','untuk','ada','apa','saya','mau','tolong','bisa','carikan'].includes(w));
+  results=results.map(r=>{
+    let score=0;
+    const text=(r.Place_Name+' '+r.Description+' '+r.Category+' '+r.City).toLowerCase();
+    keywords.forEach(k=>{if(text.includes(k))score+=2;});
+    if(q.includes('pantai')||q.includes('beach'))if(r.Category==='Bahari')score+=5;
+    if(q.includes('museum'))if(r.Category==='Budaya'&&r.Place_Name.toLowerCase().includes('museum'))score+=5;
+    if(q.includes('candi'))if(r.Place_Name.toLowerCase().includes('candi'))score+=6;
+    if(q.includes('alam')||q.includes('curug')||q.includes('gunung')||q.includes('air terjun'))if(r.Category==='Cagar Alam')score+=4;
+    if(q.includes('taman'))if(r.Category==='Taman Hiburan')score+=3;
+    if(q.includes('belanja')||q.includes('mall')||q.includes('pasar'))if(r.Category==='Pusat Perbelanjaan')score+=4;
+    if(q.includes('masjid')||q.includes('gereja')||q.includes('ibadah'))if(r.Category==='Tempat Ibadah')score+=5;
+    if(q.includes('gratis')||q.includes('free'))if(r.Price===0)score+=4;
+    if((q.includes('murah')||q.includes('hemat')||q.includes('budget')))score+=(r.Price<=20000?3:0);
+    score+=r.Rating*0.5;
+    return{...r,score};
+  }).filter(r=>r.score>0);
+  results.sort((a,b)=>b.score-a.score);
+  return results.slice(0,5);
+}
+
+function searchCulinary(q,city,maxCost){
+  q=q.toLowerCase();
+  let results=DB_CULINARY;
+  if(city)results=results.filter(r=>r.city.toLowerCase()===city.toLowerCase()||r.city.toLowerCase().includes(city.toLowerCase()));
+  if(maxCost>0)results=results.filter(r=>r.cost<=maxCost);
+  const keywords=q.split(/\s+/).filter(w=>w.length>2);
+  results=results.map(r=>{
+    let score=0;
+    const text=(r.name+' '+r.cuisines+' '+r.city).toLowerCase();
+    keywords.forEach(k=>{if(text.includes(k))score+=2;});
+    if(q.includes('kopi')||q.includes('cafe'))if(r.cuisines.toLowerCase().includes('cafe')||r.cuisines.toLowerCase().includes('coffee'))score+=4;
+    if(q.includes('jepang')||q.includes('sushi'))if(r.cuisines.toLowerCase().includes('japanese')||r.cuisines.toLowerCase().includes('sushi'))score+=4;
+    if(q.includes('indonesia')||q.includes('sunda'))if(r.cuisines.toLowerCase().includes('indonesian')||r.cuisines.toLowerCase().includes('sunda'))score+=4;
+    if(q.includes('murah'))score+=(r.priceRange<=2?4:0);
+    score+=r.rating*0.5;
+    return{...r,score};
+  }).filter(r=>r.score>0);
+  results.sort((a,b)=>b.score-a.score);
+  return results.slice(0,4);
+}
+
+function renderTourismCard(r){
+  return`<div class="result-card">
+    <div class="result-header">
+      <div>
+        <div class="result-name">${r.Place_Name}</div>
+        <span class="result-cat">${r.Category}</span>
+      </div>
+      <span class="result-city">${r.City}</span>
+    </div>
+    <div class="result-desc">${(r.Description||'').slice(0,120)}...</div>
+    <div class="result-meta">
+      <span class="result-price">💰 ${fmt(r.Price)}</span>
+      <span class="result-rating">⭐ ${r.Rating}</span>
+    </div>
+    <div class="evidence"><span>📚 Sumber:</span> tourism_with_id.csv [ID: ${r.Place_Id}]</div>
+  </div>`;
+}
+
+function renderCulinaryCard(r){
+  return`<div class="result-card">
+    <div class="result-header">
+      <div>
+        <div class="result-name">${r.name}</div>
+        <span class="result-cat">🍽️ Kuliner</span>
+      </div>
+      <span class="result-city">${r.city}</span>
+    </div>
+    <div class="result-desc">${r.cuisines}</div>
+    <div class="result-meta">
+      <span class="result-price">💰 ~${fmt(r.cost)} /2 orang</span>
+      <span class="result-rating">⭐ ${r.rating}</span>
+      <span style="color:#7c8194">Level: ${r.priceRange}/4</span>
+    </div>
+    <div class="evidence"><span>📚 Sumber:</span> zomato.csv</div>
+  </div>`;
+}
+
+function generateResponse(q){
+  const ql=q.toLowerCase();
+  const cityMatch=ql.match(/jakarta|yogyakarta|jogja|bandung|semarang|surabaya/);
+  const city=selectedCity||(cityMatch?cityMatch[0].replace('jogja','yogyakarta'):'');
+  const budgetMatch=ql.match(/(?:rp|rupiah)?\s*(\d+(?:\.\d+)?)\s*(?:ribu|rb|k)?/i);
+  let maxPrice=0;
+  if(budgetMatch){
+    let v=parseFloat(budgetMatch[1]);
+    if(ql.includes('ribu')||ql.includes('rb')||ql.includes('k'))v*=1000;
+    maxPrice=v;
+  }
+  if(ql.includes('50000')||ql.includes('50 ribu'))maxPrice=50000;
+  if(ql.includes('30000')||ql.includes('30 ribu'))maxPrice=30000;
+  if(ql.includes('100000')||ql.includes('100 ribu'))maxPrice=100000;
+
+  const isCulinary=ql.match(/makan|kuliner|restoran|cafe|kopi|warung|food|makanan|restaurant/);
+  const isWisata=!isCulinary||ql.match(/wisata|tempat|tujuan|destinasi|pantai|museum|candi|gunung|taman|alam/);
+
+  let html='';
+  let tourResults=[];
+  let culResults=[];
+
+  if(isWisata){tourResults=searchTourism(q,city,maxPrice);}
+  if(isCulinary){culResults=searchCulinary(q,city.replace('yogyakarta','jakarta'),maxPrice*2);}
+
+  if(tourResults.length===0&&culResults.length===0){
+    return`<div class="bubble ai">⚠️ <strong>Data tidak ditemukan</strong> untuk pencarian tersebut. Sistem saya hanya memiliki data wisata untuk kota: Jakarta, Yogyakarta, Bandung, Semarang, Surabaya. Coba perjelas kota tujuan atau kategori wisata yang dicari.</div>`;
+  }
+
+  if(tourResults.length>0){
+    html+=`<strong style="color:#818cf8;font-size:13px">🏛️ Rekomendasi Wisata (${tourResults.length} hasil${city?' di '+city.charAt(0).toUpperCase()+city.slice(1):''}${maxPrice?' • Maks '+fmt(maxPrice):''}):</strong>`;
+    tourResults.forEach(r=>{html+=renderTourismCard(r);});
+  }
+  if(culResults.length>0){
+    html+=`<strong style="color:#10b981;font-size:13px;display:block;margin-top:12px">🍜 Rekomendasi Kuliner (${culResults.length} hasil):</strong>`;
+    culResults.forEach(r=>{html+=renderCulinaryCard(r);});
+  }
+
+  return`<div class="bubble ai">${html}</div>`;
+}
+
+function addMsg(html,isUser=false){
+  const chat=document.getElementById('chat');
+  const div=document.createElement('div');
+  div.className='msg'+(isUser?' user':'');
+  const av=document.createElement('div');
+  av.className='avatar '+(isUser?'user':'ai');
+  av.textContent=isUser?'👤':'🤖';
+  const content=document.createElement('div');
+  if(isUser){content.className='bubble user';content.textContent=html;}
+  else{content.innerHTML=html;}
+  div.appendChild(av);div.appendChild(content);
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function sendMessage(){
+  const inp=document.getElementById('userInput');
+  const q=inp.value.trim();
+  if(!q)return;
+  addMsg(q,true);
+  inp.value='';autoResize(inp);
+  document.getElementById('sendBtn').disabled=true;
+  const loadDiv=document.createElement('div');
+  loadDiv.className='msg';loadDiv.innerHTML='<div class="avatar ai">🤖</div><div class="bubble ai loading">Mencari dari database...</div>';
+  document.getElementById('chat').appendChild(loadDiv);
+  document.getElementById('chat').scrollTop=9999;
+  setTimeout(()=>{
+    loadDiv.remove();
+    addMsg(generateResponse(q));
+    document.getElementById('sendBtn').disabled=false;
+  },800);
+}
+
+function quickAsk(el){
+  document.getElementById('userInput').value=el.textContent;
+  sendMessage();
+}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+</script>
+</body>
+</html>
